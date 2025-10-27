@@ -1,17 +1,40 @@
 import { getConnection } from "./config/configDb";
+import { configManager, controlDBManager } from "./config_manager";
 
-export async function transformOnce() {
-  const conn = await getConnection();
+export async function transformOnce(configLogId?: number) {
+  let processLogId: number | undefined;
+  let conn: any;
 
   try {
+    // Load config
+    await configManager.loadConfig();
+
+    // Get weather database config
+    const weatherDbConfig = configManager.getWeatherDbConfig();
+    conn = await getConnection(weatherDbConfig);
+
+    // Log process start
+    processLogId = await controlDBManager.logProcess(
+      "Data Transform",
+      "TRANSFORM",
+      configLogId
+    );
+
+    const etlConfig = configManager.getETLConfig();
+    const batchSize = parseInt(String(etlConfig.transform.batch_size || 1000));
+
     const [rows]: any = await conn.query(
-      `SELECT * FROM general_weather WHERE is_transformed = FALSE LIMIT 1000`
+      `SELECT * FROM general_weather WHERE is_transformed = FALSE LIMIT ?`,
+      [batchSize]
     );
 
     if (rows.length === 0) {
       console.log("No rows to transform.");
+      await controlDBManager.updateProcessLogStatus(processLogId, "SUCCESS", 0);
       return;
     }
+
+    let transformedCount = 0;
 
     for (const row of rows) {
       try {
@@ -24,7 +47,7 @@ export async function transformOnce() {
         const timezone_abbreviation = row.timezone_abbreviation;
         const time = new Date(row.time);
         const temperature_2m = parseFloat(row.temperature_2m) || null;
-        const humidity_2m = parseFloat(row.humidity_2m) || null;
+        const humidity_2m = parseInt(row.humidity_2m) || null;
 
         await conn.execute(
           `INSERT INTO transform_weather
@@ -49,16 +72,38 @@ export async function transformOnce() {
           `UPDATE general_weather SET is_transformed = TRUE WHERE id = ?`,
           [row.id]
         );
+
+        transformedCount++;
       } catch (err) {
         console.error("Transform error for row", row.id, err);
       }
     }
 
-    console.log(`Transformed ${rows.length} rows.`);
+    console.log(`Transformed ${transformedCount} rows.`);
+
+    // Update process log
+    await controlDBManager.updateProcessLogStatus(
+      processLogId,
+      "SUCCESS",
+      transformedCount
+    );
   } catch (err) {
     console.error("Error in transform:", err);
+
+    if (processLogId) {
+      await controlDBManager.updateProcessLogStatus(
+        processLogId,
+        "FAILED",
+        0,
+        err instanceof Error ? err.message : String(err)
+      );
+    }
+
+    throw err;
   } finally {
-    await conn.end();
+    if (conn) {
+      await conn.end();
+    }
   }
 }
 

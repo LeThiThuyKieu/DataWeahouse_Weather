@@ -1,20 +1,25 @@
 import cron from "node-cron";
-import dotenv from "dotenv";
-import { fetchAndLoad } from "./fetch_and_load";
-import { transformOnce } from "./transform";
-dotenv.config();
+import { runScheduledETL } from "./etl_process";
+import { configManager } from "./config_manager";
 
-const schedule = process.env.CRON_SCHEDULE || "0 * * * *"; //mỗi tiếng 1 lần, đúng vào phút đầu của giờ (vd: 00:00,01:00,02:00)
+// Load config để lấy schedule
+let schedule = "0 */6 * * *"; // Mặc định: mỗi 6 tiếng
+
+configManager.loadConfig().then(() => {
+  const etlConfig = configManager.getETLConfig();
+  if (etlConfig.fetch.schedule) {
+    schedule = etlConfig.fetch.schedule;
+  }
+});
 
 console.log("Scheduler started with cron:", schedule);
-console.log("Nó sẽ tự động lấy dữ liệu mỗi chu kỳ bạn đặt trong .env");
+console.log("Nó sẽ tự động chạy ETL process mỗi chu kỳ bạn đặt trong .env");
 
 cron.schedule(schedule, async () => {
-  console.log(`Running scheduled fetch at ${new Date().toISOString()}`);
+  console.log(`Running scheduled ETL at ${new Date().toISOString()}`);
   try {
-    await fetchAndLoad();
-    await transformOnce();
+    await runScheduledETL();
   } catch (err) {
-    console.error("Scheduled job error:", err);
+    console.error("Scheduled ETL job error:", err);
   }
 });

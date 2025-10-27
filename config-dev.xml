@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<datawarehouse-config>
+    <environment>DEV</environment>
+    <databases>
+        <weatherdb>
+            <host>localhost</host>
+            <port>3306</port>
+            <database>weatherdb_dev</database>
+            <username>root</username>
+            <password></password>
+        </weatherdb>
+        <controldb>
+            <host>localhost</host>
+            <port>3306</port>
+            <database>controldb_dev</database>
+            <username>root</username>
+            <password></password>
+        </controldb>
+    </databases>
+    
+    <staging>
+        <directory>staging_data_dev</directory>
+        <file_pattern>data_yyyymmdd_hhmm.csv</file_pattern>
+        <retention_days>7</retention_days>
+    </staging>
+    
+    <apis>
+        <weather-api>
+            <name>Open-Meteo Weather API</name>
+            <url>https://api.open-meteo.com/v1/forecast</url>
+            <cities>
+                <city name="Ho Chi Minh City" latitude="10.82" longitude="106.63"/>
+                <city name="Hanoi" latitude="21.02" longitude="105.84"/>
+            </cities>
+            <parameters>
+                <hourly>temperature_2m,relative_humidity_2m</hourly>
+            </parameters>
+        </weather-api>
+    </apis>
+    
+    <etl-processes>
+        <fetch>
+            <enabled>true</enabled>
+            <schedule>0 * * * *</schedule>
+            <timeout>60</timeout>
+        </fetch>
+        <load>
+            <enabled>true</enabled>
+            <batch_size>100</batch_size>
+            <truncate_before_load>true</truncate_before_load>
+        </load>
+        <transform>
+            <enabled>true</enabled>
+            <batch_size>100</batch_size>
+        </transform>
+    </etl-processes>
+    
+    <logging>
+        <level>DEBUG</level>
+        <file>logs/etl-dev.log</file>
+        <max_size>5MB</max_size>
+        <backup_count>3</backup_count>
+    </logging>
+</datawarehouse-config>
+
+

@@ -23,6 +23,15 @@ export async function transformOnce(configLogId?: number) {
     const etlConfig = configManager.getETLConfig();
     const batchSize = parseInt(String(etlConfig.transform.batch_size || 1000));
 
+    // Check if truncate_before_load is enabled
+    const shouldTruncate = etlConfig.load?.truncate_before_load || false;
+
+    if (shouldTruncate) {
+      console.log("Truncating transform_weather table...");
+      await conn.query("TRUNCATE TABLE transform_weather");
+      console.log("Truncated transform_weather table");
+    }
+
     const [rows]: any = await conn.query(
       `SELECT * FROM general_weather WHERE is_transformed = FALSE LIMIT ?`,
       [batchSize]

@@ -1,6 +1,7 @@
 import { fetchAndSaveWeatherData } from "./fetch_weather";
 import { loadLatestCSVFile } from "./load_csv";
 import { transformOnce } from "./transform";
+import { loadToDataWarehouse } from "./load_to_datawarehouse";
 import { configManager, controlDBManager } from "./config_manager";
 
 export async function runETLProcess(): Promise<void> {
@@ -40,6 +41,11 @@ export async function runETLProcess(): Promise<void> {
     console.log("\n--- Step 3: Transforming data ---");
     await transformOnce(configLogId);
     console.log("Data transformed to transform_weather table");
+
+    // Step 4: Load to Data Warehouse
+    console.log("\n--- Step 4: Loading to Data Warehouse ---");
+    await loadToDataWarehouse();
+    console.log("Data loaded to Data Warehouse");
 
     // Update config log as successful
     await controlDBManager.updateConfigLogStatus(configLogId, "SUCCESS");

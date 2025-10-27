@@ -87,3 +87,4 @@ INSERT IGNORE INTO config (name, url, description) VALUES
 ('Open-Meteo Weather API', 'https://api.open-meteo.com/v1/forecast', 'Open source weather API for Vietnam cities');
 
 
+

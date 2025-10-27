@@ -10,6 +10,7 @@
     "run:fetch": "ts-node src/fetch_weather.ts",
     "run:load": "ts-node src/load_csv.ts",
     "run:transform": "ts-node src/transform.ts",
+    "run:load-dw": "ts-node src/load_to_datawarehouse.ts",
     "run:etl": "ts-node src/etl_process.ts",
     "run:scheduler": "ts-node src/scheduler.ts"
   },

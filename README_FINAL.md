@@ -51,8 +51,7 @@ npm run run:fetch
 ```
 
 - Fetch data từ Open-Meteo API
-- 8 thành phố Việt Nam
-- 3 ngày forecast + 1 ngày past
+- 2 thành phố Việt Nam
 - Lưu vào CSV file
 
 ### **BƯỚC 2: LOAD**

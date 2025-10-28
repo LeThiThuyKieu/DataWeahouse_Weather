@@ -20,7 +20,7 @@ mysql -u root -p < migrations/create_tables.sql
 
 ## Cấu hình
 
-### config.xml
+### Các file config.xml
 
 File cấu hình chính chứa:
 

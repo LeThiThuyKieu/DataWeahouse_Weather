@@ -2,26 +2,6 @@
 
 Dự án Data Warehouse cho việc thu thập và xử lý dữ liệu thời tiết từ API Open-Meteo.
 
-## Cấu trúc dự án
-
-```
-weather-etl/
-├── src/
-│   ├── config/
-│   │   └── configDb.ts          # Cấu hình kết nối database
-│   ├── fetch_weather.ts        # Script fetch data từ API và lưu CSV
-│   ├── load_csv.ts             # Script load CSV vào database
-│   ├── transform.ts            # Script transform data
-│   ├── etl_process.ts         # Script ETL chính
-│   ├── scheduler.ts           # Scheduler chạy tự động
-│   └── config_manager.ts      # Quản lý config và control database
-├── migrations/
-│   └── create_tables.sql      # SQL tạo databases và tables
-├── staging_data/              # Folder chứa CSV files
-├── config.xml                 # File cấu hình chính
-└── package.json
-```
-
 ## Cài đặt
 
 1. Cài đặt dependencies:

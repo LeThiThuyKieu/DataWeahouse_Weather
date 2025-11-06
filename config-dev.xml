@@ -10,11 +10,11 @@
             <password></password>
         </weatherdb>
         <controldb>
-            <host>localhost</host>
+            <host>192.168.40.129</host>
             <port>3306</port>
             <database>controldb_dev</database>
-            <username>root</username>
-            <password></password>
+            <username>etluser</username>
+            <password>123</password>
         </controldb>
     </databases>
     

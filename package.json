@@ -7,6 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
     "start": "node dist/scheduler.js",
+    "start:etl": "node dist/etl_process.js",
     "run:fetch": "ts-node src/fetch_weather.ts",
     "run:load": "ts-node src/load_csv.ts",
     "run:transform": "ts-node src/transform.ts",

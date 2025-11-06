@@ -3,28 +3,18 @@
     <environment>DEV</environment>
     <databases>
         <weatherdb>
-            <host>192.168.40.129</host>
-            <port>3306</port>
-            <database>weatherdb_dev</database>
-            <username>etluser</username>
-            <password>123</password>
-            <!-- <host>localhost</host>
+            <host>localhost</host>
             <port>3306</port>
             <database>weatherdb_dev</database>
             <username>root</username>
-            <password></password> -->
+            <password></password>
         </weatherdb>
         <controldb>
-            <host>192.168.40.129</host>
-            <port>3306</port>
-            <database>controldb_dev</database>
-            <username>etluser</username>
-            <password>123</password>
-            <!-- <host>localhost</host>
+            <host>localhost</host>
             <port>3306</port>
             <database>controldb_dev</database>
             <username>root</username>
-            <password></password> -->
+            <password></password>
         </controldb>
     </databases>
     

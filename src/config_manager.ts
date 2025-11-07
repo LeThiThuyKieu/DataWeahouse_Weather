@@ -198,7 +198,7 @@ export class ControlDBManager {
 
   async logProcess(
     processName: string,
-    processType: "FETCH" | "LOAD" | "TRANSFORM" | "SCHEDULED",
+    processType: "FETCH" | "LOAD" | "TRANSFORM" | "SCHEDULED" | "LOAD_DW",
     configLogId?: number
   ): Promise<number> {
     const dbConfig = this.configManager.getControlDbConfig();
@@ -225,7 +225,7 @@ export class ControlDBManager {
 
   async updateProcessLogStatus(
     logId: number,
-    status: "SUCCESS" | "FAILED" | "CANCELLED",
+    status: "SUCCESS" | "FAILED" | "CANCELLED" | "NO_DATA",
     recordsProcessed: number = 0,
     errorMessage?: string
   ) {

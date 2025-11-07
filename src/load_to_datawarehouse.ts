@@ -1,13 +1,21 @@
 import { getConnection } from "./config/configDb";
-import { configManager } from "./config_manager";
+import { configManager, controlDBManager } from "./config_manager";
 
-export async function loadToDataWarehouse() {
+export async function loadToDataWarehouse(configLogId?: number) {
   let stagingConn: any;
   let dwConn: any;
+  let processLogId: number | undefined;
 
   try {
     // Load config
     await configManager.loadConfig();
+
+    // Log start of process
+    processLogId = await controlDBManager.logProcess(
+      "Load to Data Warehouse",
+      "LOAD_DW",
+      configLogId
+    );
 
     // Get database configs
     const stagingDbConfig = configManager.getWeatherDbConfig();
@@ -148,10 +156,25 @@ export async function loadToDataWarehouse() {
     }
     console.log(` Populated ${factCount} weather facts`);
 
+    //Update process log success
+    await controlDBManager.updateProcessLogStatus(
+      processLogId,
+      "SUCCESS",
+      factCount
+    );
+
     console.log("\n Datawarehouse load completed successfully!");
     console.log(`Total records loaded: ${factCount}`);
   } catch (err: any) {
     console.error("Error in loadToDataWarehouse:", err);
+    if (processLogId) {
+      await controlDBManager.updateProcessLogStatus(
+        processLogId,
+        "FAILED",
+        0,
+        err instanceof Error ? err.message : String(err)
+      );
+    }
     throw err;
   } finally {
     if (stagingConn) {

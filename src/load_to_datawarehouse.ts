@@ -37,8 +37,11 @@ export async function loadToDataWarehouse(configLogId?: number) {
 
     // Lấy dữ liệu từ transform_weather
     console.log("Fetching data from transform_weather...");
-    const [rows]: any = await stagingConn.query(`
-      SELECT * FROM transform_weather ORDER BY loaded_at DESC
+    const [rows]: any[] = await stagingConn.execute(`
+      SELECT 
+        city, latitude, longitude, elevation, utc_offset_seconds, 
+        timezone, timezone_abbreviation, time, temperature_2m, humidity_2m
+      FROM transform_weather
     `);
 
     if (rows.length === 0) {
@@ -48,133 +51,86 @@ export async function loadToDataWarehouse(configLogId?: number) {
 
     console.log(`Found ${rows.length} records to load into datawarehouse`);
 
-    // Populate Dim_Time
-    console.log("Populating Dim_Time in datawarehouse...");
-    const timeMap = new Map<string, number>();
+    let insertedCount = 0;
+    let skippedCount = 0;
+
     for (const row of rows) {
-      const datetime = new Date(row.time);
-      const dateKey = `${datetime.getFullYear()}-${String(
-        datetime.getMonth() + 1
-      ).padStart(2, "0")}-${String(datetime.getDate()).padStart(
-        2,
-        "0"
-      )} ${String(datetime.getHours()).padStart(2, "0")}:00:00`;
-
-      if (!timeMap.has(dateKey)) {
-        const year = datetime.getFullYear();
-        const month = datetime.getMonth() + 1;
-        const day = datetime.getDate();
-        const hour = datetime.getHours();
-        const quarter = Math.floor((month - 1) / 3) + 1;
-        const season = getSeason(month);
-
-        const [result]: any = await dwConn.query(
-          `
-          INSERT IGNORE INTO datawarehouse.Dim_Time 
-          (datetime, date, year, month, day, hour, day_of_week, quarter, season)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `,
-          [
-            dateKey,
-            datetime.toISOString().split("T")[0],
-            year,
-            month,
-            day,
-            hour,
-            datetime.getDay(),
-            quarter,
-            season,
-          ]
-        );
-
-        timeMap.set(dateKey, result.insertId);
+      //1. Lấy date_key từ Dim_Date (theo ngày của cột time trong transform)
+      const [dateRes]: any[] = await dwConn.execute(
+        `SELECT date_key FROM Dim_Date WHERE full_date = DATE(?) LIMIT 1`,
+        [row.time]
+      );
+      if (dateRes.length === 0) {
+        skippedCount++;
+        continue;
       }
-    }
-    console.log(`Populated ${timeMap.size} time records`);
+      const dateKey = dateRes[0].date_key;
 
-    // Populate Dim_Location
-    console.log("Populating Dim_Location in datawarehouse...");
-    const locationMap = new Map<string, number>();
-    for (const row of rows) {
-      const locationKey = `${row.city}_${row.latitude}_${row.longitude}`;
+      //2. Lấy location_key từ Dim_Location (theo city, latitude, longitude)
+      const [locRes]: any[] = await dwConn.execute(
+        `SELECT location_key FROM Dim_Location 
+         WHERE city = ? AND latitude = ? AND longitude = ? LIMIT 1`,
+        [row.city, row.latitude, row.longitude]
+      );
 
-      if (!locationMap.has(locationKey)) {
-        const [result]: any = await dwConn.query(
-          `
-          INSERT IGNORE INTO datawarehouse.Dim_Location 
-          (city, latitude, longitude, timezone, timezone_abbreviation, utc_offset_seconds)
-          VALUES (?, ?, ?, ?, ?, ?)
-        `,
+      if (locRes.length === 0) {
+        // Nếu chưa có location, insert mới vào Dim_Location
+        const [insertLoc]: any = await dwConn.execute(
+          `INSERT INTO Dim_Location 
+            (city, latitude, longitude, utc_offset_seconds, timezone, timezone_abbreviation)
+           VALUES (?, ?, ?, ?, ?, ?)`,
           [
             row.city,
             row.latitude,
             row.longitude,
-            row.timezone || "",
-            row.timezone_abbreviation || "",
-            row.utc_offset_seconds || 0,
+            row.utc_offset_seconds,
+            row.timezone,
+            row.timezone_abbreviation,
           ]
         );
-
-        locationMap.set(locationKey, result.insertId);
+        row.location_key = insertLoc.insertId;
+      } else {
+        row.location_key = locRes[0].location_key;
       }
-    }
-    console.log(`Populated ${locationMap.size} location records`);
 
-    // Populate Fact_Weather
-    console.log("Populating Fact_Weather in datawarehouse...");
-    let factCount = 0;
-    for (const row of rows) {
-      const datetime = new Date(row.time);
-      const dateKey = `${datetime.getFullYear()}-${String(
-        datetime.getMonth() + 1
-      ).padStart(2, "0")}-${String(datetime.getDate()).padStart(
-        2,
-        "0"
-      )} ${String(datetime.getHours()).padStart(2, "0")}:00:00`;
-      const locationKey = `${row.city}_${row.latitude}_${row.longitude}`;
-
-      const timeKey = timeMap.get(dateKey);
-      const locationKeyValue = locationMap.get(locationKey);
-
-      if (timeKey && locationKeyValue) {
-        await dwConn.query(
-          `
-          INSERT IGNORE INTO datawarehouse.Fact_Weather 
-          (time_key, location_key, temperature_2m, humidity_2m, elevation)
-          VALUES (?, ?, ?, ?, ?)
-        `,
+      //3. Insert dữ liệu vào Fact_Weather (nếu chưa tồn tại)
+      try {
+        await dwConn.execute(
+          `INSERT INTO Fact_Weather
+            (date_key, location_key, temperature_2m, humidity_2m, elevation)
+           VALUES (?, ?, ?, ?, ?)`,
           [
-            timeKey,
-            locationKeyValue,
+            dateKey,
+            row.location_key,
             row.temperature_2m,
             row.humidity_2m,
             row.elevation,
           ]
         );
-        factCount++;
+        insertedCount++;
+      } catch (err: any) {
+        // Nếu bản ghi trùng (unique key), thì bỏ qua
+        if (err.code === "ER_DUP_ENTRY") {
+          skippedCount++;
+          continue;
+        } else {
+          throw err;
+        }
       }
     }
-    console.log(` Populated ${factCount} weather facts`);
+
+    console.log(`Đã load ${insertedCount} bản ghi mới vào Fact_Weather`);
 
     //Update process log success
     await controlDBManager.updateProcessLogStatus(
       processLogId,
       "SUCCESS",
-      factCount
+      insertedCount
     );
 
     console.log("\n Datawarehouse load completed successfully!");
-    console.log(`Total records loaded: ${factCount}`);
   } catch (err: any) {
     console.error("Error in loadToDataWarehouse:", err);
-    if (processLogId) {
-      await controlDBManager.updateProcessLogStatus(
-        processLogId,
-        "FAILED",
-        0,
-        err instanceof Error ? err.message : String(err)
-      );
-    }
     throw err;
   } finally {
     if (stagingConn) {
@@ -184,16 +140,6 @@ export async function loadToDataWarehouse(configLogId?: number) {
       await dwConn.end();
     }
   }
-}
-
-/**
- * Helper function để xác định mùa
- */
-function getSeason(month: number): string {
-  if (month === 12 || month === 1 || month === 2) return "Winter";
-  if (month >= 3 && month <= 5) return "Spring";
-  if (month >= 6 && month <= 8) return "Summer";
-  return "Autumn";
 }
 
 // CLI để chạy bằng tay

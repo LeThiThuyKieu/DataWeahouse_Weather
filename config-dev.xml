@@ -29,7 +29,7 @@
             <name>Open-Meteo Weather API</name>
             <url>https://api.open-meteo.com/v1/forecast</url>
             <cities>
-                <city name="Ha Noi" latitude="21.0278" longitude="105.8342"/>
+                <city name="Hanoi" latitude="21.0278" longitude="105.8342"/>
                 <city name="Tuyen Quang" latitude="21.7767" longitude="105.2280"/>
                 <city name="Lao Cai" latitude="22.4809" longitude="103.9750"/>
                 <city name="Thai Nguyen" latitude="21.5942" longitude="105.8482"/>
@@ -45,7 +45,7 @@
                 <city name="Khanh Hoa" latitude="12.2388" longitude="109.1967"/>
                 <city name="Lam Dong" latitude="11.9404" longitude="108.4583"/>
                 <city name="Dak Lak" latitude="12.7100" longitude="108.2378"/>
-                <city name="TP.HCM mo rong" latitude="10.8231" longitude="106.6297"/>
+                <city name="Ho Chi Minh City" latitude="10.8231" longitude="106.6297"/>
                 <city name="Dong Nai" latitude="10.9453" longitude="106.8249"/>
                 <city name="Tay Ninh" latitude="11.3146" longitude="106.0980"/>
                 <city name="Can Tho" latitude="10.0452" longitude="105.7469"/>

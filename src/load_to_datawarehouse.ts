@@ -55,9 +55,9 @@ export async function loadToDataWarehouse(configLogId?: number) {
     let skippedCount = 0;
 
     for (const row of rows) {
-      //1. Lấy date_key từ Dim_Date (theo ngày của cột time trong transform)
+      //1. Lấy date_key từ dim_date (theo ngày của cột time trong transform)
       const [dateRes]: any[] = await dwConn.execute(
-        `SELECT date_key FROM Dim_Date WHERE full_date = DATE(?) LIMIT 1`,
+        `SELECT date_key FROM dim_date WHERE full_date = DATE(?) LIMIT 1`,
         [row.time]
       );
       if (dateRes.length === 0) {
@@ -66,17 +66,17 @@ export async function loadToDataWarehouse(configLogId?: number) {
       }
       const dateKey = dateRes[0].date_key;
 
-      //2. Lấy location_key từ Dim_Location (theo city, latitude, longitude)
+      //2. Lấy location_key từ dim_location (theo city, latitude, longitude)
       const [locRes]: any[] = await dwConn.execute(
-        `SELECT location_key FROM Dim_Location 
+        `SELECT location_key FROM dim_location 
          WHERE city = ? AND latitude = ? AND longitude = ? LIMIT 1`,
         [row.city, row.latitude, row.longitude]
       );
 
       if (locRes.length === 0) {
-        // Nếu chưa có location, insert mới vào Dim_Location
+        // Nếu chưa có location, insert mới vào dim_location
         const [insertLoc]: any = await dwConn.execute(
-          `INSERT INTO Dim_Location 
+          `INSERT INTO dim_location 
             (city, latitude, longitude, utc_offset_seconds, timezone, timezone_abbreviation)
            VALUES (?, ?, ?, ?, ?, ?)`,
           [
@@ -93,10 +93,10 @@ export async function loadToDataWarehouse(configLogId?: number) {
         row.location_key = locRes[0].location_key;
       }
 
-      //3. Insert dữ liệu vào Fact_Weather (nếu chưa tồn tại)
+      //3. Insert dữ liệu vào fact_weather (nếu chưa tồn tại)
       try {
         await dwConn.execute(
-          `INSERT INTO Fact_Weather
+          `INSERT INTO fact_weather
             (date_key, location_key, temperature_2m, humidity_2m, elevation)
            VALUES (?, ?, ?, ?, ?)`,
           [
@@ -119,7 +119,7 @@ export async function loadToDataWarehouse(configLogId?: number) {
       }
     }
 
-    console.log(`Đã load ${insertedCount} bản ghi mới vào Fact_Weather`);
+    console.log(`Đã load ${insertedCount} bản ghi mới vào fact_weather`);
 
     //Update process log success
     await controlDBManager.updateProcessLogStatus(

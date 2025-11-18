@@ -58,22 +58,37 @@ export async function fetchWeatherData(): Promise<WeatherData[]> {
 
       const data = response.data;
 
-      // Lấy dữ liệu hiện tại (giờ đầu tiên)
+      // Lấy dữ liệu đúng theo giờ hiện tại
       if (data.hourly && data.hourly.time && data.hourly.time.length > 0) {
-        const weatherItem: WeatherData = {
-          city: city.name,
-          latitude: data.latitude,
-          longitude: data.longitude,
-          elevation: data.elevation,
-          utc_offset_seconds: data.utc_offset_seconds,
-          timezone: data.timezone,
-          timezone_abbreviation: data.timezone_abbreviation,
-          time: data.hourly.time[0],
-          temperature_2m: data.hourly.temperature_2m[0],
-          humidity_2m: data.hourly.relative_humidity_2m[0],
-        };
+        const now = new Date();
+        const currentHourString = now.toISOString().slice(0, 13);
+        // Ví dụ: "2025-11-18T07"
 
-        weatherData.push(weatherItem);
+        // Tìm index trong API của giờ hiện tại
+        const index = data.hourly.time.findIndex((t: string) =>
+          t.startsWith(currentHourString)
+        );
+
+        if (index !== -1) {
+          const weatherItem: WeatherData = {
+            city: city.name,
+            latitude: data.latitude,
+            longitude: data.longitude,
+            elevation: data.elevation,
+            utc_offset_seconds: data.utc_offset_seconds,
+            timezone: data.timezone,
+            timezone_abbreviation: data.timezone_abbreviation,
+            time: data.hourly.time[index],
+            temperature_2m: data.hourly.temperature_2m[index],
+            humidity_2m: data.hourly.relative_humidity_2m[index],
+          };
+
+          weatherData.push(weatherItem);
+        } else {
+          console.warn(
+            `Không tìm thấy dữ liệu đúng giờ hiện tại cho ${city.name}`
+          );
+        }
       }
     } catch (error) {
       console.error(`Error fetching data for ${city.name}:`, error);

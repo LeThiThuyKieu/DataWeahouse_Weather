@@ -44,7 +44,7 @@ export async function runETLProcess(): Promise<void> {
 
     // Step 4: Load to Data Warehouse
     console.log("\n--- Step 4: Loading to Data Warehouse ---");
-    await loadToDataWarehouse();
+    await loadToDataWarehouse(configLogId);
     console.log("Data loaded to Data Warehouse");
 
     // Update config log as successful

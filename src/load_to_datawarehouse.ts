@@ -68,17 +68,17 @@ export async function loadToDataWarehouse(configLogId?: number) {
 
       //2. Lấy location_key từ dim_location (theo city, latitude, longitude)
       const [locRes]: any[] = await dwConn.execute(
-        `SELECT location_key FROM dim_location 
-         WHERE city = ? AND latitude = ? AND longitude = ? LIMIT 1`,
+        `SELECT * FROM dim_location 
+        WHERE city = ? AND latitude = ? AND longitude = ?`,
         [row.city, row.latitude, row.longitude]
       );
 
       if (locRes.length === 0) {
-        // Nếu chưa có location, insert mới vào dim_location
+        // Không có location → INSERT mới
         const [insertLoc]: any = await dwConn.execute(
           `INSERT INTO dim_location 
             (city, latitude, longitude, utc_offset_seconds, timezone, timezone_abbreviation)
-           VALUES (?, ?, ?, ?, ?, ?)`,
+          VALUES (?, ?, ?, ?, ?, ?)`,
           [
             row.city,
             row.latitude,
@@ -88,9 +88,36 @@ export async function loadToDataWarehouse(configLogId?: number) {
             row.timezone_abbreviation,
           ]
         );
+
         row.location_key = insertLoc.insertId;
       } else {
-        row.location_key = locRes[0].location_key;
+        const existing = locRes[0];
+
+        const isSame =
+          existing.utc_offset_seconds === row.utc_offset_seconds &&
+          existing.timezone === row.timezone &&
+          existing.timezone_abbreviation === row.timezone_abbreviation;
+
+        row.location_key = existing.location_key;
+
+        if (!isSame) {
+          // UPDATE lại
+          await dwConn.execute(
+            `UPDATE dim_location 
+            SET 
+              utc_offset_seconds = ?,
+              timezone = ?,
+              timezone_abbreviation = ?,
+              updated_at = NOW()
+            WHERE location_key = ?`,
+            [
+              row.utc_offset_seconds,
+              row.timezone,
+              row.timezone_abbreviation,
+              existing.location_key,
+            ]
+          );
+        }
       }
 
       //3. Insert dữ liệu vào fact_weather (nếu chưa tồn tại)

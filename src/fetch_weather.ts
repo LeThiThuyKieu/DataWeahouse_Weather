@@ -1,4 +1,4 @@
-import axios from "axios";
+import { fetchWithRetry } from "./api_client";
 import fs from "fs";
 import path from "path";
 import { configManager, controlDBManager } from "./config_manager";
@@ -52,11 +52,15 @@ export async function fetchWeatherData(): Promise<WeatherData[]> {
 
   for (const city of cities) {
     try {
-      const response = await axios.get(
-        `${weatherAPIConfig.url}?latitude=${city.latitude}&longitude=${city.longitude}&hourly=${weatherAPIConfig.parameters.hourly}&timezone=Asia%2FHo_Chi_Minh`
-      );
+      // const response = await axios.get(
+      //   `${weatherAPIConfig.url}?latitude=${city.latitude}&longitude=${city.longitude}&hourly=${weatherAPIConfig.parameters.hourly}&timezone=Asia%2FHo_Chi_Minh`
+      // );
+      const url = `${weatherAPIConfig.url}?latitude=${city.latitude}&longitude=${city.longitude}&hourly=${weatherAPIConfig.parameters.hourly}&timezone=Asia%2FHo_Chi_Minh`;
 
-      const data = response.data;
+      // const response =await fetchWithRetry(url);
+
+      // const data = response.data;
+const data = await fetchWithRetry(url);
 
       // Lấy dữ liệu đúng giờ 07:00 theo VN
       if (data.hourly && data.hourly.time && data.hourly.time.length > 0) {

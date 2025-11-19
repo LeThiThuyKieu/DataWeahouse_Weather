@@ -71,10 +71,13 @@
         </weather-api>
     </apis>
     
+   
     <etl-processes>
         <fetch>
             <enabled>true</enabled>
-            <schedule>0 7 * * *</schedule>
+            <!-- <schedule>0 7 * * *</schedule> -->
+                <schedule>*/5 * * * *</schedule>
+
             <timeout>60</timeout>
         </fetch>
         <load>
@@ -97,3 +100,13 @@
 </datawarehouse-config>
 
 
+<!-- | Mục đích                         | Cron pattern   | Giải thích                               |
+| 
+| Chạy mỗi ngày lúc 07:00 sáng     | `0 7 * * *`    | Phút 0, giờ 7, tất cả ngày, tháng, thứ   |
+| Chạy mỗi ngày lúc 17:35          | `35 17 * * *`  | Phút 35, giờ 17, tất cả ngày, tháng, thứ |
+| Chạy mỗi giờ, phút 0             | `0 * * * *`    | Phút 0 của mỗi giờ                       |
+| Chạy mỗi 10 phút                 | `*/10 * * * *` | Mỗi 10 phút                              |
+| Chạy mỗi 30 phút                 | `*/30 * * * *` | Mỗi 30 phút                              |
+| Chạy mỗi 15 phút                 | `*/15 * * * *` | Mỗi 15 phút                              |
+| Chạy mỗi 5 phút                  | `*/5 * * * *`  | Mỗi 5 phút                               |
+| Chạy mỗi tuần vào thứ 2 lúc 8:00 | `0 8 * * 1`    | Thứ 2 (1) lúc 08:00                      | -->

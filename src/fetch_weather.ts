@@ -53,20 +53,23 @@ export async function fetchWeatherData(): Promise<WeatherData[]> {
   for (const city of cities) {
     try {
       const response = await axios.get(
-        `${weatherAPIConfig.url}?latitude=${city.latitude}&longitude=${city.longitude}&hourly=${weatherAPIConfig.parameters.hourly}`
+        `${weatherAPIConfig.url}?latitude=${city.latitude}&longitude=${city.longitude}&hourly=${weatherAPIConfig.parameters.hourly}&timezone=Asia%2FHo_Chi_Minh`
       );
 
       const data = response.data;
 
-      // Lấy dữ liệu đúng theo giờ hiện tại
+      // Lấy dữ liệu đúng giờ 07:00 theo VN
       if (data.hourly && data.hourly.time && data.hourly.time.length > 0) {
+        // Lấy ngày hôm nay theo giờ Việt Nam
         const now = new Date();
-        const currentHourString = now.toISOString().slice(0, 13);
-        // Ví dụ: "2025-11-18T07"
+        const dateString = now.toISOString().slice(0, 10); // YYYY-MM-DD
 
-        // Tìm index trong API của giờ hiện tại
+        // Cố định giờ 07:00
+        const targetHourString = `${dateString}T07`;
+
+        // Tìm index của giờ 07:00
         const index = data.hourly.time.findIndex((t: string) =>
-          t.startsWith(currentHourString)
+          t.startsWith(targetHourString)
         );
 
         if (index !== -1) {
@@ -85,9 +88,7 @@ export async function fetchWeatherData(): Promise<WeatherData[]> {
 
           weatherData.push(weatherItem);
         } else {
-          console.warn(
-            `Không tìm thấy dữ liệu đúng giờ hiện tại cho ${city.name}`
-          );
+          console.warn(`Không tìm thấy dữ liệu 07:00 cho ${city.name}`);
         }
       }
     } catch (error) {
